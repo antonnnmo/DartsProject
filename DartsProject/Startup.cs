@@ -1,8 +1,10 @@
+using DartsProject.Providers;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SpaServices.ReactDevelopmentServer;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -13,9 +15,8 @@ namespace DartsProject
 		public Startup(IConfiguration configuration)
 		{
 			Configuration = configuration;
-		} 
-
-
+		}
+		
 		public IConfiguration Configuration { get; }
 
 		// This method gets called by the runtime. Use this method to add services to the container.
@@ -28,6 +29,8 @@ namespace DartsProject
 			{
 				configuration.RootPath = "ClientApp/build";
 			});
+
+			GlobalCacheReader.Cache.Set(GlobalCacheReader.CacheKeys.SqlConnectionString, Configuration.GetConnectionString("Database"));
 		}
 
 		// This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

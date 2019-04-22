@@ -1,7 +1,8 @@
-import React from 'react';
+﻿import React from 'react';
 import { Collapse, Container, Navbar, NavbarBrand, NavbarToggler, NavItem, NavLink } from 'reactstrap';
 import { Link } from 'react-router-dom';
 import './NavMenu.css';
+import '../site.css';
 
 export default class NavMenu extends React.Component {
   constructor (props) {
@@ -19,26 +20,24 @@ export default class NavMenu extends React.Component {
   }
   render () {
     return (
-      <header>
-        <Navbar className="navbar-expand-sm navbar-toggleable-sm border-bottom box-shadow mb-3" light >
-          <Container>
-            <NavbarBrand tag={Link} to="/">DartsProject</NavbarBrand>
-            <NavbarToggler onClick={this.toggle} className="mr-2" />
-            <Collapse className="d-sm-inline-flex flex-sm-row-reverse" isOpen={this.state.isOpen} navbar>
-              <ul className="navbar-nav flex-grow">
-                <NavItem>
-                  <NavLink tag={Link} className="text-dark" to="/">Home</NavLink>
-                </NavItem>
-                <NavItem>
-                  <NavLink tag={Link} className="text-dark" to="/counter">Counter</NavLink>
-                </NavItem>
-                <NavItem>
-                  <NavLink tag={Link} className="text-dark" to="/fetch-data">Fetch data</NavLink>
-                </NavItem>
-              </ul>
-            </Collapse>
-          </Container>
-        </Navbar>
+        <header>
+            <div className="menu-container clearfix">
+                <div className="menu-item-wrapper clearfix">
+                    <NavLink tag={Link} className="menu-item" to="/">На главную</NavLink>
+                </div>
+                <div className="menu-item-wrapper clearfix">
+                    <NavLink tag={Link} className="menu-item" to="/users">Список</NavLink>
+                </div>
+                <div className="menu-item-wrapper clearfix">
+                    <NavLink tag={Link} className="menu-item" to="/games">Игры</NavLink>
+                </div>
+                <div className="menu-item-wrapper clearfix">
+                    <NavLink tag={Link} className="menu-item" to="/liders">Лидеры</NavLink>
+                </div>
+                <div className="menu-item-wrapper clearfix">
+                    <NavLink tag={Link} className="menu-item" to="/activeGame">Активная игра</NavLink>
+                </div>
+            </div>
       </header>
     );
   }

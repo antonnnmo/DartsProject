@@ -20,8 +20,10 @@ const rootElement = document.getElementById('root');
 
 ReactDOM.render(
   <Provider store={store}>
-    <ConnectedRouter history={history}>
-      <App />
+        <ConnectedRouter history={history}>
+            <div className="main-container">
+                <App />
+            </div>
     </ConnectedRouter>
   </Provider>,
   rootElement);

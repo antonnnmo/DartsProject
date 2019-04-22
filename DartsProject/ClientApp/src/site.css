@@ -1,0 +1,104 @@
+﻿:root {
+    --background: #E3F7FF;
+    --container-color: #F6FBFF;
+    --text-color: #42a9e4; /*#2D5C81;*/
+    --dark-blue: #1B223E;
+    --button2: #A1E1C9;
+    --button3: #62DEAF;
+    --button4: #41DBA1;
+    --button5: #0CDC8E;
+}
+
+html {
+    height: 100%;
+}
+
+body, #root {
+    margin: 0px;
+    height: 100%;
+    min-height: 100%;
+}
+
+.menu-container {
+    border: 1px solid var(--dark-blue);
+    background: var(--dark-blue);
+    border-bottom-left-radius: 10px;
+    border-bottom-right-radius: 10px;
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+.menu-item {
+    color: var(--text-color);
+    text-decoration: none;
+}
+
+.menu-item-wrapper {
+    width: 20%;
+    float: left;
+    margin-top: 20px;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.main-container {
+    width: 80%;
+    margin: 0 auto;
+    background-color: var(--background);
+    height: 100%;
+}
+
+.players-left-container {
+    float: left;
+    width: 60%;
+    padding-top: 50px;
+}
+
+.players-right-container {
+    float: left;
+    width: 40%;
+    padding-top: 50px;
+}
+
+.cool-player-info-container {
+    border: 1px solid var(--container-color);
+    background: var(--container-color);
+    border-radius: 3px;
+    box-shadow: 0 0 10px grey;
+    height: 200px;
+    margin: 10px;
+    padding: 10px;
+}
+
+.mini-block-wrapper {
+    width: auto;
+    background: var(--dark-blue);
+    border-radius: 5px;
+    color: white;
+    padding: 5px;
+    display: inline-block;
+    margin-right: 10px;
+    margin-bottom: 10px;
+    cursor: pointer;
+}
+
+.mini-block-wrapper.selected {
+    background: red;
+}
+
+.bulge-block-wrapper {
+    font-size: 1.4rem;
+    padding: 5px 15px;
+    color: var(--container-color);
+}
+
+select {
+    background: var(--dark-blue);
+    color: var(--container-color);
+    border: 0px;
+}
+
+    select:focus {
+        border: 0px;
+        outline: none;
+    }
