@@ -2,7 +2,10 @@
 const loadUsersType = 'LOAD_USERS';
 const selectUserType = 'SELECT_USER';
 const unselectUserType = 'UNSELECT_USER';
-const initialState = { users: [], selectedUsers: [] };
+const redirect = 'REDIRECT';
+const cleanRedirect = 'CLEAN_REDIRECT';
+const forgetRedirect = 'FORGET_REDIRECT';
+const initialState = { users: [], selectedUsers: [], isRedirect: false, redirectPage: '' };
 
 export const actionCreators = {
     loadData: () => async (dispatch, getState) => {
@@ -22,7 +25,26 @@ export const actionCreators = {
         else {
             dispatch({ type: unselectUserType, userId });
         }
-    }
+    },
+
+    startGame: (users) => async (dispatch, getState) => {
+        var token = localStorage.getItem("token");
+        fetch('api/Game/create', {
+            method: 'POST',
+            body: JSON.stringify({ Users: users }),
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token
+            }
+        }).then((res: any) => {
+            res.json().then((result) => {
+                //TODO добавить передачу id игры
+                dispatch({ type: cleanRedirect, page: 'activeGame'});
+            })
+        }).catch((err: any) => console.log(err));
+    },
+
+    forgetRedirect: () => ({ type: forgetRedirect }),
 };
 
 export const reducer = (state, action) => {
@@ -30,7 +52,7 @@ export const reducer = (state, action) => {
 
     if (action.type === selectUserType) {
         state.selectedUsers.push(action.userId);
-        return { ...state, selectedUsers: state.selectedUsers,date: new Date() };
+        return { ...state, selectedUsers: state.selectedUsers, date: new Date() };
     }
 
     if (action.type === unselectUserType) {
@@ -40,6 +62,18 @@ export const reducer = (state, action) => {
 
     if (action.type === loadUsersType) {
         return { ...state, users: action.users };
+    }
+
+    if (action.type === forgetRedirect) {
+        return { ...state, isRedirect: false };
+    }
+
+    if (action.type === redirect) {
+        return { ...state, isRedirect: true, redirectPage: action.page};
+    }
+
+    if (action.type === cleanRedirect) {
+        return { ...initialState, isRedirect: true, redirectPage: action.page };
     }
 
     if (action.type === decrementCountType) {

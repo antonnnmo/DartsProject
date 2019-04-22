@@ -11,6 +11,12 @@ export default class UserNameBlock extends Component {
         this.handleClick = this.handleClick.bind(this);
     }
 
+    componentDidMount() {
+        if (this.props.isSelected) {
+            this.setState({ selected: "selected", isSelected:true });
+        }
+    }
+
     handleClick() {
         var selected = this.state.selected ? "" : "selected";
         var res = this.props.handleSelected && this.props.handleSelected(this.props.userId, !this.state.selected);

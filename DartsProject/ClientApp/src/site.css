@@ -3,6 +3,7 @@
     --container-color: #F6FBFF;
     --text-color: #42a9e4; /*#2D5C81;*/
     --dark-blue: #1B223E;
+    --light-blue: #72ccff;
     --button2: #A1E1C9;
     --button3: #62DEAF;
     --button4: #41DBA1;
@@ -98,7 +99,26 @@ select {
     border: 0px;
 }
 
-    select:focus {
-        border: 0px;
-        outline: none;
-    }
+select:focus {
+    border: 0px;
+    outline: none;
+}
+
+.avatar-wrapper {
+    float: left;
+    width: 33%;
+}
+
+.avatar {
+    border: 10px solid var(--light-blue);
+    margin: 10px auto;
+    border-radius: 50%;
+    width: 173px;
+    height: 173px;
+}
+
+.text-avatar {
+    text-align: center;
+    font-size: 5rem;
+    margin-top: 10px;
+}
