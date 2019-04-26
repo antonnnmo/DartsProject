@@ -3,10 +3,10 @@
 export default class Avatar extends Component {
     render() {
         return (
-            <div className="avatar-wrapper">
-                <div className="avatar">
+            <div className="avatar-wrapper clearfix">
+                <div className="avatar clearfix">
                     {this.props.name &&
-                        <img src={"/image/" + this.props.name} alt="dd"/>
+                        <img className="avatar-img" src={"/api/image/getImage?id=" + this.props.name} alt="dd" />
                     }
 
                     {!this.props.name &&

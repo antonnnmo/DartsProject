@@ -1,4 +1,5 @@
 using DartsProject.Providers;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
@@ -7,6 +8,9 @@ using Microsoft.AspNetCore.SpaServices.ReactDevelopmentServer;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.IdentityModel.Tokens;
+using System;
+using System.Text;
 
 namespace DartsProject
 {
@@ -30,6 +34,24 @@ namespace DartsProject
 				configuration.RootPath = "ClientApp/build";
 			});
 
+			services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+			   .AddJwtBearer(options =>
+			   {
+				   options.RequireHttpsMetadata = false;
+				   options.SaveToken = true;
+				   options.TokenValidationParameters = new TokenValidationParameters
+				   {
+					   ValidIssuer = "AntonDarts",
+					   ValidAudience = "AntonDarts",
+					   IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("fdsfdghfhh5hsdf6koinw45u76k")),
+					   ValidateLifetime = true,
+					   ValidateIssuerSigningKey = true,
+					   ClockSkew = TimeSpan.Zero
+				   };
+			   });
+
+			services.AddMemoryCache();
+
 			GlobalCacheReader.Cache.Set(GlobalCacheReader.CacheKeys.SqlConnectionString, Configuration.GetConnectionString("Database"));
 		}
 
@@ -50,6 +72,7 @@ namespace DartsProject
 			app.UseHttpsRedirection();
 			app.UseStaticFiles();
 			app.UseSpaStaticFiles();
+			app.UseAuthentication();
 
 			app.UseMvc(routes =>
 			{

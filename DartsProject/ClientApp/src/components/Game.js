@@ -2,7 +2,7 @@
 import { bindActionCreators } from 'redux';
 import { connect } from 'react-redux';
 import { actionCreators } from '../store/Game';
-import UserNameBlock from './UserNameBlock';
+import ScoringBlock from './ScoringBlock';
 import BulgeBlock from './BulgeBlock';
 import GoBlock from './GoBlock';
 import Avatar from './Avatar';
@@ -10,11 +10,23 @@ import Avatar from './Avatar';
 class Game extends Component {
     constructor() {
         super();
-
+        this.state = {
+            selectedUserId: ''
+        };
+        this.shot = this.shot.bind(this);
+        this.selectUser = this.selectUser.bind(this);
     }
 
     componentDidMount() {
         this.props.loadGameData();
+    }
+
+    shot(scoreType, score) {
+        this.props.shot(score, scoreType, this.props.gameInfo.gameId);
+    }
+
+    selectUser(userId) {
+        this.setState({ selectedUserId: userId});
     }
 
     render() {
@@ -26,33 +38,52 @@ class Game extends Component {
                 </div>);
         }
 
-        var userList = this.props.gameInfo.users && this.props.gameInfo.users.map(u => <div>{u.name} {u.score}</div>);
-        var currentUser = this.props.gameInfo.users && this.props.gameInfo.users.find(u => u.id === this.props.gameInfo.currentUserId).name;
+        var userList = this.props.gameInfo.users && this.props.gameInfo.users.map(u => <div className={"game-user " + (u.position % 2 === 0 ? '' : 'odd')}><div className="game-user-score">{u.score}</div><div className="game-user-avatar clearfix"><Avatar synonym={u.synonym} name={u.image} /></div><div className="game-user-name">{u.name}</div></div>);
+        var selectedUserId = this.state.selectedUserId;
+        var userWinnerList = this.props.gameInfo.users && this.props.gameInfo.users.map(u => <div onClick={() => this.selectUser(u.id)}
+            className={"game-user " +
+                (u.id === selectedUserId ? 'selected ' : '') +
+                (u.position % 2 === 0 ? '' : 'odd')}><div className="game-user-score">{u.score}</div><div className="game-user-avatar clearfix"><Avatar synonym={u.synonym} name={u.image} /></div><div className="game-user-name">{u.name}</div></div>);
+        var currentUser = this.props.gameInfo.users && this.props.gameInfo.users.find(u => u.id === this.props.gameInfo.currentUserId);
+        var shots = this.props.gameInfo.shots && this.props.gameInfo.shots.map(s => <div className={s.scoreType === 1 ? 'shot single-shot' : (s.scoreType === 2 ? 'shot double-shot' : 'shot triple-shot')}>{s.score * s.scoreType}</div>);
         return (
             <div>
-                {userList}
-                Бросает: {currentUser}
-                <br/>
-                Круг: {this.props.gameInfo.currentLeg} 
-                Бросок: {this.props.gameInfo.currentShot}
-                Счет по броскам: {this.props.gameInfo.currentTempScore}
+                {!this.props.isEndGame &&
+                    <div>
+                        <div className="game-info-block">Круг: {this.props.gameInfo.currentLeg}</div>
+                        <div className="current-score-block clearfix">
+                            <div className="avatar-outer clearfix">
+                                <Avatar synonym={currentUser && currentUser.synonym} name={currentUser && currentUser.image} />
+                                <div className="score-block clearfix">
+                                    {this.props.gameInfo.currentTempScore}
+                                </div>
+                            </div>
+                        </div>
+                        <div className="current-shots-outer">
+                        <div className="current-shots-inner">
+                            <div className="shot">
+                                <div className="cancel-shot" onClick={() => this.props.cancelLastShot(this.props.gameInfo.gameId)}>
+                                </div>
+                             </div>
+                                {shots}
+                            </div>
+                        </div>
+                        <ScoringBlock onShot={this.shot} />
 
-                <button onClick={() => this.props.shot(0, 1, this.props.gameInfo.gameId)}>0</button>
-                <button onClick={() => this.props.shot(1, 1, this.props.gameInfo.gameId)}>1</button>
-                <button onClick={() => this.props.shot(2, 1, this.props.gameInfo.gameId)}>2</button>
-                <button onClick={() => this.props.shot(3, 1, this.props.gameInfo.gameId)}>3</button>
-                <button onClick={() => this.props.shot(1, 2, this.props.gameInfo.gameId)}>1x2</button>
-                <button onClick={() => this.props.shot(2, 2, this.props.gameInfo.gameId)}>2x2</button>
-                <button onClick={() => this.props.shot(3, 2, this.props.gameInfo.gameId)}>3x2</button>
-                <button onClick={() => this.props.shot(4, 2, this.props.gameInfo.gameId)}>4x2</button>
-                <button onClick={() => this.props.shot(5, 2, this.props.gameInfo.gameId)}>5x2</button>
-                <button onClick={() => this.props.shot(6, 2, this.props.gameInfo.gameId)}>6x2</button>
-                <button onClick={() => this.props.shot(7, 2, this.props.gameInfo.gameId)}>7x2</button>
-                <button onClick={() => this.props.shot(8, 2, this.props.gameInfo.gameId)}>8x2</button>
-                <button onClick={() => this.props.shot(9, 2, this.props.gameInfo.gameId)}>9x2</button>
-                <button onClick={() => this.props.shot(20, 3, this.props.gameInfo.gameId)}>20x3</button>
-                <button onClick={() => this.props.shot(20, 1, this.props.gameInfo.gameId)}>20x1</button>
-                <button onClick={() => this.props.shot(20, 2, this.props.gameInfo.gameId)}>20x2</button>
+                        <div className="current-game-users-block clearfix">
+                            <div className="current-game-users-inner clearfix">
+                                {userList}
+                            </div>
+                        </div>
+                    </div>
+                }
+                {this.props.isEndGame &&
+                    <div>
+                    Выберите победителя
+                    {userWinnerList}
+                    <button onClick={() => this.props.winGame(this.state.selectedUserId, this.props.gameInfo.gameId)}>Победить!</button>
+                    </div>
+                }
             </div>
         );
     }

@@ -41,7 +41,7 @@ class Users extends Component {
     render() {
         //var users = this.props.users.map(u => <div className="mini-block-wrapper">{u.name}</div>);
         var users = this.props.users.map(u => <UserNameBlock isSelected={this.props.selectedUsers.indexOf(u.id) > -1} name={u.name} userId={u.id} handleSelected={this.handleSelected} />);
-        var avatars = this.props.users.slice(0).sort(function () { return 0.5 - Math.random() }).slice(0, 6).map(a => <Avatar name={a.image} synonym={a.synonym} />);
+        var avatars = this.props.users.slice(0).sort(function () { return 0.5 - Math.random() }).slice(0, 6).map(a => <Avatar name={a.imageId === "00000000-0000-0000-0000-000000000000" ? "" : a.imageId} synonym={a.synonym} />);
 
         if (this.props.isRedirect === true) {
             this.props.forgetRedirect();
@@ -63,15 +63,17 @@ class Users extends Component {
                     <div className="cool-player-info-container">
                         <div className="block-header-wrapper">
                             <BulgeBlock>
-                                <select>
-                                    <option selected={true}>Классика</option>
+                                <select defaultValue="classic">
+                                    <option value="classic">Классика</option>
                                 </select>
                             </BulgeBlock>
 
                             <GoBlock current={this.props.selectedUsers.length} onGo={this.go} max={5}>
                             </GoBlock>
                         </div>
-                        {users}
+                        <div>
+                            {users}
+                        </div>
                     </div>
                 </div>
             </div>

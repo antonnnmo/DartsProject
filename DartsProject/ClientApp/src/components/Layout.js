@@ -5,8 +5,8 @@ import NavMenu from './NavMenu';
 export default props => (
   <div>
     <NavMenu />
-    <Container>
+    <div>
       {props.children}
-    </Container>
+    </div>
   </div>
 );

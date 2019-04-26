@@ -4,7 +4,10 @@ import Layout from './components/Layout';
 import Home from './components/Home';
 import Users from './components/Users';
 import Game from './components/Game';
-import FetchData from './components/FetchData';
+import Login from './components/Login';
+import Profile from './components/Profile';
+import Winner from './components/Winner';
+import Liders from './components/Liders';
 import './site.css';
 
 export default () => (
@@ -12,6 +15,9 @@ export default () => (
         <Route exact path='/' component={Home} />
         <Route path='/users' component={Users} />
         <Route path='/activeGame' component={Game} />
-        <Route path='/fetch-data/:startDateIndex?' component={FetchData} />
+        <Route path='/login' component={Login} />
+        <Route path='/profile' component={Profile} />
+        <Route path='/winner' component={Winner} />
+        <Route path='/liders' component={Liders} />
   </Layout>
 );

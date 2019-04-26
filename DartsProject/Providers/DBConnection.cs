@@ -19,7 +19,7 @@ namespace DartsProject.Providers
 			_connectionString = connectionString;
 		}
 
-		public SqlDataReader Execute(string command, params string[] parameters)
+		public SqlDataReader Execute(string command, params object[] parameters)
 		{
 			sqlConnection = new SqlConnection(_connectionString);
 
@@ -38,7 +38,7 @@ namespace DartsProject.Providers
 			}
 		}
 
-		public int UploadFile(string command, Stream stream, params string[] parameters)
+		public int UploadFile(string command, Stream stream, params object[] parameters)
 		{
 			using (var sqlConnection = new SqlConnection(_connectionString))
 			{
@@ -52,7 +52,7 @@ namespace DartsProject.Providers
 			}
 		}
 
-		public int ExecuteNonQuery(string command, params string[] parameters)
+		public int ExecuteNonQuery(string command, params object[] parameters)
 		{
 			using (var sqlConnection = new SqlConnection(_connectionString))
 			{
@@ -64,7 +64,7 @@ namespace DartsProject.Providers
 			}
 		}
 
-		public int ExecuteNonQueryWithFile(string command, byte[] data, params string[] parameters)
+		public int ExecuteNonQueryWithFile(string command, byte[] data, params object[] parameters)
 		{
 			using (var sqlConnection = new SqlConnection(_connectionString))
 			{
@@ -78,7 +78,7 @@ namespace DartsProject.Providers
 			}
 		}
 
-		public T ExecuteScalar<T>(string command, T defValue, params string[] parameters)
+		public T ExecuteScalar<T>(string command, T defValue, params object[] parameters)
 		{
 			using (var sqlConnection = new SqlConnection(_connectionString))
 			{
@@ -92,10 +92,10 @@ namespace DartsProject.Providers
 			}
 		}
 
-		private string Validate(string command, string[] parameters)
+		private string Validate(string command, object[] parameters)
 		{
 			if (parameters == null) return command;
-			return String.Format(command, parameters.Select(p => String.IsNullOrEmpty(p) ? String.Empty : p.Replace("'", "''")).ToArray());
+			return String.Format(command, parameters.Select(p => String.IsNullOrEmpty(p.ToString()) ? String.Empty : p.ToString().Replace("'", "''")).ToArray());
 		}
 
 		public void Dispose()

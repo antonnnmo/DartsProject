@@ -16,6 +16,11 @@ namespace DartsProject.Controllers
 		public string[] Users { get; set; }
 	}
 
+	public class CancelShotRequest
+	{
+		public Guid GameId { get; set; }
+	}
+
 	public class ShotRequest
 	{
 		public int Score { get; set; }
@@ -23,13 +28,24 @@ namespace DartsProject.Controllers
 		public Guid GameId { get; set; }
 	}
 
+	public class WinRequest
+	{
+		public Guid UserId { get; set; }
+		public Guid GameId { get; set; }
+	}
+
 	public class ShotResponse
 	{
+		public ShotResponse()
+		{
+			Shots = new List<ShotInfo>();
+		}
 		public int Result { get; set; }
 		public Guid NextPlayer { get; internal set; }
 		public int Score { get; internal set; }
 		public int OldScore { get; internal set; }
 		public int LegIncrement { get; internal set; }
+		public List<ShotInfo> Shots { get; set; }
 	}
 
 	[Route("api/Game")]
@@ -43,10 +59,10 @@ namespace DartsProject.Controllers
 
 			using (var provider = new DBConnectionProvider())
 			{
-				using (var reader = provider.Execute(@"Select g.Id as GameId, g.Number, u.Name, u.Id as UserId, uig.Position, g.CurrentUserId, uig.CurrentScore, g.currentLeg, uig.CurrentShot from Game g
+				using (var reader = provider.Execute(@"Select g.Id as GameId, g.Number, u.Name, u.Id as UserId, uig.Position, g.CurrentUserId, uig.CurrentScore, g.currentLeg, uig.CurrentShot, u.ImageId, u.Synonym from Game g
 							join UserInGame uig on uig.GameId = g.Id
 							join[User] u on u.Id = uig.UserId
-							Where g.isActive = 1 order by g.startDate desc"))
+							Where g.Id = (Select TOP(1) Id from Game Where isActive = 1 order by g.startDate desc)"))
 				{
 					while (reader != null && reader.Read())
 					{
@@ -58,11 +74,16 @@ namespace DartsProject.Controllers
 						gameInfo.Users.Add(new GameUserInfo() {
 							Name = reader.GetValue("Name", String.Empty),
 							Score = reader.GetValue("CurrentScore", 0),
-							Id = reader.GetValue("UserId", Guid.Empty)
+							Position = reader.GetValue("Position", 0),
+							Id = reader.GetValue("UserId", Guid.Empty),
+							Image = reader.GetValue("ImageId", Guid.Empty) == Guid.Empty ? "" : reader.GetValue("ImageId", Guid.Empty).ToString(),
+							Synonym = reader.GetValue("Synonym", String.Empty),
 						});
 					}
 				}
 			}
+
+			gameInfo.Shots = GetShots(gameInfo.GameId, gameInfo.CurrentLeg, gameInfo.CurrentUserId);
 
 			if (gameInfo.Users.Count == 0) return gameInfo;
 
@@ -71,6 +92,35 @@ namespace DartsProject.Controllers
 			gameInfo.CurrentTempScore = currentUserScore - GetShotSum(gameInfo.GameId, gameInfo.CurrentLeg, gameInfo.CurrentUserId);
 
 			return gameInfo;
+		}
+
+		private List<ShotInfo> GetShots(Guid gameId, int currentLeg, Guid currentUserId)
+		{
+			var shots = new List<ShotInfo>();
+			using (var provider = new DBConnectionProvider())
+			{
+				using (var reader = provider.Execute(@"Select s.Score, st.Multiplier from Shot s WITH(NOLOCK) join ScoreType st on st.Id = s.ScoreTypeId Where s.LegNumber = {0} and s.UserId = '{1}' and s.GameId = '{2}' and s.IsOverhead = 0 order by s.Number asc",
+					currentLeg.ToString(), currentUserId, gameId))
+				{
+					while (reader != null && reader.Read())
+					{
+						shots.Add(new ShotInfo() {
+							Score = reader.GetValue("Score", 0),
+							ScoreType = reader.GetValue("Multiplier", 1)
+						});
+					}
+				}
+			}
+
+			return shots;
+		}
+
+		[HttpPost]
+		[Route("win")]
+		public ShotResponse Win([FromBody]WinRequest request)
+		{
+			WinGame(new ShotRequest() { GameId = request.GameId, Score = 0, ScoreType = 1 }, request.UserId);
+			return new ShotResponse() { Result = 1 };
 		}
 
 		[HttpPost]
@@ -82,15 +132,17 @@ namespace DartsProject.Controllers
 			var currentLeg = -1;
 			var position = -1;
 			var userId = Guid.Empty;
+			var shotNumber = 0;
 			using (var provider = new DBConnectionProvider())
 			{
-				using (var reader = provider.Execute(@"Select uig.CurrentShot, uig.CurrentScore, uig.UserId, g.CurrentLeg, uig.Position from UserInGame uig
-																	join Game g on g.currentUserId = uig.UserId
+				using (var reader = provider.Execute(@"Select uig.CurrentShot, uig.CurrentScore, uig.UserId, g.CurrentLeg, uig.Position, (Select MAX(Number) + 1 from Shot Where GameId = '{0}') as ShotNumber from UserInGame uig
+																	join Game g on g.currentUserId = uig.UserId and g.Id = uig.GameId
 																	Where GameId = '{0}'", request.GameId.ToString()))
 				{
 					if (reader != null && reader.Read())
 					{
 						currentShot = reader.GetValue("CurrentShot", 0);
+						shotNumber = reader.GetValue("ShotNumber", 0);
 						currentScore = reader.GetValue("CurrentScore", -1);
 						currentLeg = reader.GetValue("CurrentLeg", -1);
 						position = reader.GetValue("Position", -1);
@@ -104,6 +156,9 @@ namespace DartsProject.Controllers
 				currentScore -= GetShotSum(request.GameId, currentLeg, userId);
 			}
 
+			DBConnectionProvider.ExecuteNonQuery("Insert into Shot(GameId, UserId, legNumber, score, scoreTypeId, Position, PrevTotalScore, Number) VALUES('{0}', '{1}', {2}, {3}, '{4}', {5}, {6}, {7})",
+						request.GameId.ToString(), userId.ToString(), currentLeg.ToString(), request.Score.ToString(), GetScoreTypeId(request.ScoreType).ToString(), currentShot + 1, currentScore, shotNumber);
+
 			if (currentScore == request.Score * request.ScoreType && request.ScoreType != 1)
 			{
 				WinGame(request, userId);
@@ -111,9 +166,6 @@ namespace DartsProject.Controllers
 			}
 			else
 			{
-				DBConnectionProvider.ExecuteNonQuery("Insert into Shot(GameId, UserId, legNumber, score, scoreTypeId) VALUES('{0}', '{1}', {2}, {3}, '{4}')",
-						request.GameId.ToString(), userId.ToString(), currentLeg.ToString(), request.Score.ToString(), GetScoreTypeId(request.ScoreType).ToString());
-
 				if (currentScore <= request.Score * request.ScoreType + 1)
 				{
 					MarkShotsAsOverhead(request.GameId, userId, currentLeg);
@@ -126,7 +178,7 @@ namespace DartsProject.Controllers
 						if (currentLeg == 15 && IsLastPlayer(request.GameId, userId))
 						{
 							DBConnectionProvider.ExecuteNonQuery("Update Game Set currentUserId = null, currentLeg = 16 Where Id = '{0}'", request.GameId.ToString());
-							return new ShotResponse() { Result = 0 };
+							return new ShotResponse() { Result = 3 };
 						}
 						else
 						{
@@ -142,7 +194,8 @@ namespace DartsProject.Controllers
 					{
 						DBConnectionProvider.ExecuteNonQuery("Update UserInGame Set currentShot = currentShot + 1 Where GameId = '{0}' and UserId = '{1}'",
 							request.GameId.ToString(), userId.ToString());
-						return new ShotResponse() { Result = 0, Score = currentScore - request.Score*request.ScoreType };
+
+						return new ShotResponse() { Result = 0, Score = currentScore - request.Score*request.ScoreType, Shots = GetShots(request.GameId, currentLeg, userId) };
 					}
 				}
 			}
@@ -160,9 +213,16 @@ namespace DartsProject.Controllers
 									Where GameId = '{0}' and UserId = '{1}' and legNumber = {2} and s.IsOverhead = 0", 0, gameId.ToString(), userId.ToString(), currentLeg.ToString());
 		}
 
+		private int GetClosedLegSum(Guid gameId, int currentLeg, Guid userId)
+		{
+			return DBConnectionProvider.ExecuteScalar(@"Select SUM(score*st.Multiplier) from Shot s
+									join ScoreType st on st.Id = s.ScoreTypeId
+									Where GameId = '{0}' and UserId = '{1}' and legNumber <> {2} and s.IsOverhead = 0", 0, gameId.ToString(), userId.ToString(), currentLeg.ToString());
+		}
+
 		private bool IsLastPlayer(Guid gameId, Guid userId)
 		{
-			throw new NotImplementedException();
+			return DBConnectionProvider.ExecuteScalar("Select COUNT(1) from UserInGame Where Position = (Select MAX(Position) from UserInGame Where GameId = '{0}') and GameId = '{0}' and UserId = '{1}'", 0, gameId, userId) > 0;
 		}
 
 		private void MarkShotsAsOverhead(Guid gameId, Guid userId, int currentLeg)
@@ -200,7 +260,93 @@ namespace DartsProject.Controllers
 
 		private void WinGame(ShotRequest request, Guid userId)
 		{
-			DBConnectionProvider.ExecuteNonQuery("Update Game Set isActive = 0, endDate = GETUTCDATE(), winnerId = '{0}', winnerScore = '{1}', winnerScoreTypeId = '{2}'", userId.ToString(), request.Score.ToString(), GetScoreTypeId(request.ScoreType));
+			DBConnectionProvider.ExecuteNonQuery("Update Game Set isActive = 0, endDate = GETUTCDATE(), winnerId = '{0}', winnerScore = '{1}', winnerScoreTypeId = '{2}' Where Id = '{3}'", userId.ToString(), request.Score.ToString(), GetScoreTypeId(request.ScoreType), request.GameId);
+			UpdateRating(request.GameId, userId);
+		}
+
+		private void UpdateRating(Guid gameId, Guid winnerId)
+		{
+			var users = new List<Tuple<Guid, decimal>>();
+			using (var provider = new DBConnectionProvider())
+			{
+				using (var reader = provider.Execute(@"Select u.Id, u.Rate from UserInGame uig join [User] u on u.Id = uig.UserId Where uig.GameId = '{0}'", gameId))
+				{
+					while(reader != null && reader.Read())
+					{
+						users.Add(
+							new Tuple<Guid, decimal>(reader.GetValue("Id", gameId), reader.GetValue("Rate", Decimal.Zero))
+						);
+					}
+				}
+			}
+
+			var loosers = users.Where(u => u.Item1 != winnerId);
+			var winner = users.Where(u => u.Item1 == winnerId).First();
+
+			foreach (var looser in loosers)
+			{
+				var middleRate = users.Sum(u => u.Item1 == looser.Item1 ? 0 : u.Item2)/(users.Count - 1);
+				var rate = looser.Item2 - Convert.ToDecimal(Math.Pow(1.2, Convert.ToDouble(looser.Item2 - middleRate))) - 10m;
+
+				DBConnectionProvider.ExecuteNonQuery("Update [User] Set Rate = {0} Where Id = '{1}'", Convert.ToInt32(rate), looser.Item1);
+			}
+
+			{
+				var middleRate = users.Sum(u => u.Item1 == winner.Item1 ? 0 : u.Item2) / (users.Count - 1);
+				var rate = winner.Item2 + Convert.ToDecimal(Math.Pow(1.2, Convert.ToDouble(middleRate - winner.Item2))) + 10m;
+
+				DBConnectionProvider.ExecuteNonQuery("Update [User] Set Rate = {0} Where Id = '{1}'", Convert.ToInt32(rate), winner.Item1);
+			}
+		}
+
+		[HttpPost]
+		[Route("cancelLastShot")]
+		public ShotResponse CancelLastShot([FromBody]CancelShotRequest request)
+		{
+			var position = 0;
+			var userId = Guid.Empty;
+			var legNumber = 0;
+			var prevTotalScore = 0;
+			var shotId = Guid.Empty;
+			using (var provider = new DBConnectionProvider())
+			{
+				using (var reader = provider.Execute(@"Select TOP(1) Id, LegNumber, UserId, Position, PrevTotalScore from Shot Where GameId = '{0}' order by Number desc", request.GameId))
+				{
+					if (reader != null && reader.Read())
+					{
+						position = reader.GetValue("Position", 0);
+						userId = reader.GetValue("UserId", Guid.Empty);
+						shotId = reader.GetValue("Id", Guid.Empty);
+						legNumber = reader.GetValue("LegNumber", 0);
+						prevTotalScore = reader.GetValue("PrevTotalScore", 0);
+					}
+				}
+			}
+
+			if (position != 3)
+			{
+				DBConnectionProvider.ExecuteNonQuery("Delete from Shot Where Id = '{0}'; Update UserInGame Set CurrentShot = CurrentShot - 1 Where UserId = '{1}' and GameId = '{2}'", shotId, userId, request.GameId);
+				var shots = GetShots(request.GameId, legNumber, userId);
+				var score = DBConnectionProvider.ExecuteScalar("Select CurrentScore from UserInGame Where UserId = '{0}' and GameId = '{1}'", 0, userId, request.GameId);
+				return new ShotResponse() { Result = 0, Score = score - shots.Sum(s => s.Score * s.ScoreType), Shots = shots };
+			}
+			else
+			{
+				var userPosition = DBConnectionProvider.ExecuteScalar("Select Position from UserInGame Where UserId = '{0}' and GameId = '{1}'", 0, userId, request.GameId);
+				var maxPosition = DBConnectionProvider.ExecuteScalar("Select MAX(Position) from UserInGame Where GameId = '{0}'", 0, request.GameId);
+
+				/*if (userPosition == maxPosition)
+				{
+					legNumber = legNumber - 1;
+				}*/
+
+				var score = 301 - GetClosedLegSum(request.GameId, legNumber, userId);
+
+				DBConnectionProvider.ExecuteNonQuery(@"Delete from Shot Where Id = '{0}'; Update UserInGame Set CurrentShot = 2, CurrentScore={4} Where UserId = '{1}' and GameId = '{2}'; 
+					Update Game Set CurrentUserId = '{1}', CurrentLeg = {3} Where Id = '{2}';", shotId, userId, request.GameId, legNumber, score);
+				var shots = GetShots(request.GameId, legNumber, userId);
+				return new ShotResponse() {Shots = shots, Result = 2, NextPlayer = userId, OldScore = score, Score = score - shots.Sum(s => s.Score*s.ScoreType), LegIncrement = userPosition == maxPosition ? -1 : 0};
+			}
 		}
 
 		[HttpPost]

@@ -23,6 +23,18 @@
     <None Include="$(SpaRoot)**" Exclude="$(SpaRoot)node_modules\**" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Remove="ClientApp\src\store\ShotInfo.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="Models\ShotInfo.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="ClientApp\src\fonts\" />
+  </ItemGroup>
+
   <Target Name="DebugEnsureNodeEnv" BeforeTargets="Build" Condition=" '$(Configuration)' == 'Debug' And !Exists('$(SpaRoot)node_modules') ">
     <!-- Ensure Node.js is installed -->
     <Exec Command="node --version" ContinueOnError="true">

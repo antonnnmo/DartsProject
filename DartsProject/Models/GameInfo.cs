@@ -10,6 +10,7 @@ namespace DartsProject.Models
 		public int Number { get; set; }
 		public Guid GameId { get; set; }
 		public List<GameUserInfo> Users { get; set; }
+		public List<ShotInfo> Shots { get; set; }
 		public Guid CurrentUserId { get; internal set; }
 		public int CurrentShot { get; internal set; }
 		public int CurrentLeg { get; internal set; }
@@ -18,6 +19,7 @@ namespace DartsProject.Models
 		public GameInfo()
 		{
 			Users = new List<GameUserInfo>();
+			Shots = new List<ShotInfo>();
 		}
 	}
 }

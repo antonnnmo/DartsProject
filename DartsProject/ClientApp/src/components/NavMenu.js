@@ -2,6 +2,7 @@
 import { Collapse, Container, Navbar, NavbarBrand, NavbarToggler, NavItem, NavLink } from 'reactstrap';
 import { Link } from 'react-router-dom';
 import './NavMenu.css';
+import '../fonts/montserrat.css';
 import '../site.css';
 
 export default class NavMenu extends React.Component {
@@ -18,7 +19,15 @@ export default class NavMenu extends React.Component {
       isOpen: !this.state.isOpen
     });
   }
-  render () {
+    render() {
+        let browserStorage = (typeof localStorage === 'undefined') ? null : localStorage;
+        var isAuth = false;
+        if (browserStorage) {
+            var tokenExpiredOn = browserStorage.getItem("tokenExpiredOn");
+            if (browserStorage.getItem("token") && tokenExpiredOn && (parseInt(tokenExpiredOn) > (new Date()).getTime())) {
+                isAuth = true;
+            }
+        }
     return (
         <header>
             <div className="menu-container clearfix">
@@ -37,6 +46,16 @@ export default class NavMenu extends React.Component {
                 <div className="menu-item-wrapper clearfix">
                     <NavLink tag={Link} className="menu-item" to="/activeGame">Активная игра</NavLink>
                 </div>
+                {isAuth &&
+                    <div className="menu-item-wrapper clearfix">
+                        <NavLink tag={Link} className="menu-item" to="/profile">Профиль</NavLink>
+                    </div>
+                }
+                {!isAuth &&
+                    <div className="menu-item-wrapper clearfix">
+                        <NavLink tag={Link} className="menu-item" to="/login">Войти</NavLink>
+                    </div>
+                }
             </div>
       </header>
     );
